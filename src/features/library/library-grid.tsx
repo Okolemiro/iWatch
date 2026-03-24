@@ -1,5 +1,6 @@
 "use client";
 
+import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { MediaCard } from "@/features/library/media-card";
@@ -14,12 +15,18 @@ export function LibraryGrid({ items }: LibraryGridProps) {
   const [mediaType, setMediaType] = useState("all");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("recently-updated");
+  const [query, setQuery] = useState("");
 
   const filteredItems = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
     const nextItems = items.filter((item) => {
       const typeMatch = mediaType === "all" || item.mediaType === mediaType;
       const statusMatch = status === "all" || item.status === status;
-      return typeMatch && statusMatch;
+      const searchMatch =
+        !normalizedQuery ||
+        item.title.toLowerCase().includes(normalizedQuery) ||
+        item.overview.toLowerCase().includes(normalizedQuery);
+      return typeMatch && statusMatch && searchMatch;
     });
 
     nextItems.sort((a, b) => {
@@ -36,10 +43,21 @@ export function LibraryGrid({ items }: LibraryGridProps) {
     });
 
     return nextItems;
-  }, [items, mediaType, sort, status]);
+  }, [items, mediaType, query, sort, status]);
 
   return (
     <section className="space-y-6">
+      <label className="flex items-center gap-3 rounded-[1.4rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+        <Search className="size-4 text-[var(--color-text-muted)]" />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search your library"
+          className="focus-ring min-w-0 flex-1 bg-transparent text-sm placeholder:text-[var(--color-text-muted)]"
+          aria-label="Search library"
+        />
+      </label>
+
       <FilterSortBar
         mediaType={mediaType}
         status={status}

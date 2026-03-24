@@ -17,16 +17,16 @@ export default async function HomePage() {
     <div className="app-shell">
       <AppHeader />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 pb-16 pt-8">
-        <section className="hero-panel overflow-hidden rounded-[2.25rem] px-6 py-8 lg:px-8 lg:py-10">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+        <section className="hero-panel overflow-hidden rounded-[2.25rem] px-6 py-7 lg:px-8 lg:py-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="eyebrow">
                 iWatched dashboard
               </p>
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight lg:text-6xl">
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight lg:text-5xl">
                 Your private watchlist, ratings, and episode progress in one secure place.
               </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-[var(--color-text-muted)]">
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-[var(--color-text-muted)] lg:text-base lg:leading-7">
                 Search TMDb, add titles in seconds, and keep every movie and show tied to your own account with
                 Supabase-backed access control.
               </p>
@@ -85,7 +85,7 @@ export default async function HomePage() {
                     totalEpisodes: 0,
                     rating: null,
                     watched: false,
-                    href: "/watchlist",
+                    href: item.mediaType === "movie" ? `/watchlist/movies/${item.tmdbId}` : `/watchlist/shows/${item.tmdbId}`,
                     metaLabel: "Watchlist",
                   }}
                 />

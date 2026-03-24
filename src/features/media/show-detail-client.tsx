@@ -91,7 +91,9 @@ export function ShowDetailClient({
                 >
                   {seasons.map((season) => (
                     <option key={season.id} value={season.id}>
-                      Season {season.seasonNumber}: {season.name}
+                      {season.name.trim().toLowerCase() === `season ${season.seasonNumber}`.toLowerCase()
+                        ? `Season ${season.seasonNumber}`
+                        : `Season ${season.seasonNumber}: ${season.name}`}
                     </option>
                   ))}
                 </select>
@@ -131,7 +133,7 @@ export function ShowDetailClient({
           </div>
 
           <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[var(--color-border)]">
-            <div className="grid grid-cols-[minmax(0,1.1fr)_120px_120px_160px] gap-4 bg-[var(--color-surface-strong)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
+            <div className="grid grid-cols-[minmax(0,1.1fr)_110px_100px_140px] gap-3 bg-[var(--color-surface-strong)] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
               <span>Episode</span>
               <span>Air date</span>
               <span>Runtime</span>
@@ -141,15 +143,15 @@ export function ShowDetailClient({
               {selectedSeason.episodes.map((episode) => (
                 <div
                   key={episode.id}
-                  className="grid grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1.1fr)_120px_120px_160px_220px]"
+                  className="grid grid-cols-1 gap-3 px-4 py-3 lg:grid-cols-[minmax(0,1.1fr)_110px_100px_140px_200px]"
                 >
                   <div>
-                    <p className="font-semibold">
+                    <p className="text-sm font-semibold">
                       {episode.episodeNumber}. {episode.name}
                     </p>
                   </div>
-                  <p className="text-sm text-[var(--color-text-muted)]">{formatDate(episode.airDate)}</p>
-                  <p className="text-sm text-[var(--color-text-muted)]">{formatRuntime(episode.runtime)}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">{formatDate(episode.airDate)}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">{formatRuntime(episode.runtime)}</p>
                   <button
                     type="button"
                     onClick={() =>
@@ -157,7 +159,7 @@ export function ShowDetailClient({
                         watched: !episode.watched,
                       })
                     }
-                    className={`focus-ring inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-center text-sm font-medium transition ${
+                    className={`focus-ring inline-flex items-center justify-center gap-2 rounded-full px-3 py-1.5 text-center text-xs font-medium transition ${
                       episode.watched
                         ? "bg-[var(--color-accent)] text-white"
                         : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-strong)]"

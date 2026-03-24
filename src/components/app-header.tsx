@@ -12,7 +12,7 @@ export async function AppHeader() {
     <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-page)_82%,transparent)] backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex size-13 items-center justify-center rounded-[1.4rem] bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] text-white shadow-[0_20px_45px_rgba(255,120,68,0.26)]">
+          <div className="flex size-13 items-center justify-center rounded-[1.4rem] bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] text-white shadow-[0_18px_38px_rgba(123,44,255,0.32)]">
             <Film className="size-5" />
           </div>
           <div>

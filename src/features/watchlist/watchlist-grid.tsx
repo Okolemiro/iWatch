@@ -88,7 +88,10 @@ export function WatchlistGrid({ items }: WatchlistGridProps) {
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => {
-          const href = item.mediaType === "movie" ? `/movies/${item.id}` : `/shows/${item.id}`;
+          const href =
+            item.mediaType === "movie"
+              ? `/watchlist/movies/${item.tmdbId}`
+              : `/watchlist/shows/${item.tmdbId}`;
           const isActive = activeId === item.id && isPending;
 
           return (
