@@ -133,11 +133,12 @@ export function ShowDetailClient({
           </div>
 
           <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[var(--color-border)]">
-            <div className="grid grid-cols-[minmax(0,1.1fr)_110px_100px_140px] gap-3 bg-[var(--color-surface-strong)] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
+            <div className="hidden gap-3 bg-[var(--color-surface-strong)] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-muted)] lg:grid lg:grid-cols-[minmax(0,1.1fr)_110px_100px_140px_200px]">
               <span>Episode</span>
               <span>Air date</span>
               <span>Runtime</span>
               <span>Status</span>
+              <span>Rating</span>
             </div>
             <div className="divide-y divide-[var(--color-border)]">
               {selectedSeason.episodes.map((episode) => (
