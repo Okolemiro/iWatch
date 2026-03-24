@@ -7,7 +7,7 @@ import type { LibraryCardItem } from "@/features/library/types";
 import { formatYear } from "@/lib/utils";
 
 export function MediaCard({ item }: { item: LibraryCardItem }) {
-  const href = item.mediaType === "movie" ? `/movies/${item.id}` : `/shows/${item.id}`;
+  const href = item.href || (item.mediaType === "movie" ? `/movies/${item.id}` : `/shows/${item.id}`);
 
   return (
     <Link href={href} className="panel group overflow-hidden rounded-[2rem] transition hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(22,31,52,0.14)]">
@@ -19,9 +19,9 @@ export function MediaCard({ item }: { item: LibraryCardItem }) {
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-[var(--color-accent-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
-                  {item.mediaType}
+                  {item.metaLabel || item.mediaType}
                 </span>
-                <StatusBadge status={item.status} />
+                {!item.metaLabel ? <StatusBadge status={item.status} /> : null}
               </div>
               <h3 className="mt-3 text-lg font-semibold tracking-tight">{item.title}</h3>
               <p className="mt-1 text-sm text-[var(--color-text-muted)]">{formatYear(item.releaseDateOrFirstAirDate) || "TBA"}</p>
@@ -36,13 +36,15 @@ export function MediaCard({ item }: { item: LibraryCardItem }) {
 
           <p className="line-clamp-3 text-sm leading-6 text-[var(--color-text-muted)]">{item.overview}</p>
 
-          {item.mediaType === "tv" ? (
+          {!item.metaLabel && item.mediaType === "tv" ? (
             <ProgressBar
               value={item.progressPercentage}
               label={`${item.watchedEpisodes}/${item.totalEpisodes} episodes`}
             />
-          ) : (
+          ) : !item.metaLabel ? (
             <ProgressBar value={item.progressPercentage} label={item.watched ? "Watched" : "Not watched"} />
+          ) : (
+            <p className="text-sm font-medium text-[var(--color-text-muted)]">Open details or move it into your collection when you&apos;re ready.</p>
           )}
         </div>
       </div>

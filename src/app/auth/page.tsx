@@ -16,7 +16,7 @@ export default async function AuthPage() {
             Welcome to {APP_NAME}.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-white/72">
-            Search TMDb, save titles to your personal library, and keep ratings and watched progress synced to your
+            Search TMDb, save titles to your collection, and keep ratings and watched progress synced to your
             own secure account.
           </p>
 

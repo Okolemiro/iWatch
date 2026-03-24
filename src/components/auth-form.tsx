@@ -15,13 +15,12 @@ export function AuthForm() {
   const [mode, setMode] = useState<AuthMode>("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const submitLabel = useMemo(
-    () => (mode === "sign-in" ? "Sign in to your library" : "Create your account"),
+    () => (mode === "sign-in" ? "Sign in to your collection" : "Create your account"),
     [mode],
   );
 
@@ -54,9 +53,6 @@ export function AuthForm() {
           password,
           options: {
             emailRedirectTo: `${publicEnv.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`,
-            data: {
-              display_name: displayName.trim(),
-            },
           },
         });
 
@@ -98,24 +94,12 @@ export function AuthForm() {
       <div className="mt-8">
         <h1 className="text-3xl font-semibold tracking-tight text-white">{submitLabel}</h1>
         <p className="mt-3 text-sm leading-6 text-white/72">
-          {APP_NAME} keeps every library private. Your movies, shows, ratings, and progress only belong to your
+          {APP_NAME} keeps every collection private. Your movies, shows, ratings, and progress only belong to your
           account.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-        {mode === "sign-up" ? (
-          <label className="grid gap-2 text-sm">
-            <span className="font-medium text-white/80">Display name</span>
-            <input
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              placeholder="How should we label your library?"
-              className="focus-ring rounded-[1.25rem] border border-white/10 bg-white/6 px-4 py-3 text-white placeholder:text-white/40"
-            />
-          </label>
-        ) : null}
-
         <label className="grid gap-2 text-sm">
           <span className="font-medium text-white/80">Email</span>
           <input

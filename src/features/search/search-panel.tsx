@@ -15,6 +15,7 @@ type SearchResult = {
   overview: string;
   releaseDateOrFirstAirDate: string | null;
   inLibrary: boolean;
+  inWatchlist: boolean;
 };
 
 export function SearchPanel() {
@@ -23,6 +24,7 @@ export function SearchPanel() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [activeAddId, setActiveAddId] = useState<string | null>(null);
+  const [activeWatchlistId, setActiveWatchlistId] = useState<string | null>(null);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -92,7 +94,7 @@ export function SearchPanel() {
       setResults((current) =>
         current.map((item) =>
           item.tmdbId === result.tmdbId && item.mediaType === result.mediaType
-            ? { ...item, inLibrary: true }
+            ? { ...item, inLibrary: true, inWatchlist: false }
             : item,
         ),
       );
@@ -100,6 +102,45 @@ export function SearchPanel() {
       setError(addError instanceof Error ? addError.message : "Could not add this title.");
     } finally {
       setActiveAddId(null);
+    }
+  }
+
+  async function handleWatchlist(result: SearchResult) {
+    setActiveWatchlistId(`${result.mediaType}-${result.tmdbId}`);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tmdbId: result.tmdbId,
+          mediaType: result.mediaType,
+          title: result.title,
+          posterPath: result.posterPath,
+          backdropPath: result.backdropPath,
+          overview: result.overview,
+          releaseDateOrFirstAirDate: result.releaseDateOrFirstAirDate,
+        }),
+      });
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Could not add this title to your watchlist.");
+      }
+
+      setResults((current) =>
+        current.map((item) =>
+          item.tmdbId === result.tmdbId && item.mediaType === result.mediaType
+            ? { ...item, inWatchlist: true }
+            : item,
+        ),
+      );
+    } catch (watchlistError) {
+      setError(watchlistError instanceof Error ? watchlistError.message : "Could not add this title to your watchlist.");
+    } finally {
+      setActiveWatchlistId(null);
     }
   }
 
@@ -156,8 +197,13 @@ export function SearchPanel() {
                       {result.mediaType}
                     </span>
                     {result.inLibrary ? (
-                      <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                      <span className="rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-[var(--color-text-muted)]">
                         In library
+                      </span>
+                    ) : null}
+                    {result.inWatchlist && !result.inLibrary ? (
+                      <span className="rounded-full bg-white/8 px-3 py-1 text-xs font-semibold text-[var(--color-text-muted)]">
+                        In watchlist
                       </span>
                     ) : null}
                   </div>
@@ -170,14 +216,22 @@ export function SearchPanel() {
                     {result.overview}
                   </p>
 
-                  <div className="mt-4">
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <button
                       type="button"
                       onClick={() => handleAdd(result)}
                       disabled={result.inLibrary || activeAddId === addId}
-                      className="focus-ring rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="focus-ring inline-flex items-center justify-center rounded-full bg-[var(--color-accent)] px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {result.inLibrary ? "Already added" : activeAddId === addId ? "Adding..." : "Add to library"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleWatchlist(result)}
+                      disabled={result.inLibrary || result.inWatchlist || activeWatchlistId === addId}
+                      className="focus-ring inline-flex items-center justify-center rounded-full border border-[var(--color-border)] px-4 py-2 text-center text-sm font-medium transition hover:bg-[var(--color-surface-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {result.inLibrary ? "Tracked" : result.inWatchlist ? "Saved" : activeWatchlistId === addId ? "Saving..." : "Save to watchlist"}
                     </button>
                   </div>
                 </div>

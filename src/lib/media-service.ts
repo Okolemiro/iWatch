@@ -40,6 +40,12 @@ export async function addTitleToLibrary(tmdbId: number, mediaType: MediaType) {
   }
 
   if (existing) {
+    await supabase
+      .from("watchlist_items")
+      .delete()
+      .eq("tmdb_id", tmdbId)
+      .eq("media_type", mediaType);
+
     return existing;
   }
 
@@ -84,6 +90,12 @@ export async function addTitleToLibrary(tmdbId: number, mediaType: MediaType) {
       if (detailError || trackingError) {
         throw detailError || trackingError;
       }
+
+      await supabase
+        .from("watchlist_items")
+        .delete()
+        .eq("tmdb_id", details.tmdbId)
+        .eq("media_type", mediaType);
 
       return libraryItem;
     }
@@ -202,6 +214,12 @@ export async function addTitleToLibrary(tmdbId: number, mediaType: MediaType) {
       throw episodeTrackingError;
     }
 
+    await supabase
+      .from("watchlist_items")
+      .delete()
+      .eq("tmdb_id", payload.tmdbId)
+      .eq("media_type", mediaType);
+
     return libraryItem;
   } catch (error) {
     await cleanupFailedInsert(libraryItemId);
@@ -212,6 +230,69 @@ export async function addTitleToLibrary(tmdbId: number, mediaType: MediaType) {
 export async function removeLibraryItem(libraryItemId: string) {
   const { supabase } = await requireSupabaseUser();
   const { error } = await supabase.from("library_items").delete().eq("id", libraryItemId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function addTitleToWatchlist(input: {
+  tmdbId: number;
+  mediaType: MediaType;
+  title: string;
+  posterPath?: string | null;
+  backdropPath?: string | null;
+  overview: string;
+  releaseDateOrFirstAirDate?: string | null;
+}) {
+  const { supabase, user } = await requireSupabaseUser();
+
+  const { data: existingLibraryItem, error: existingLibraryError } = await supabase
+    .from("library_items")
+    .select("id")
+    .eq("tmdb_id", input.tmdbId)
+    .eq("media_type", input.mediaType)
+    .maybeSingle();
+
+  if (existingLibraryError) {
+    throw new Error(existingLibraryError.message);
+  }
+
+  if (existingLibraryItem) {
+    throw new Error("This title is already in your library.");
+  }
+
+  const { data, error } = await supabase
+    .from("watchlist_items")
+    .upsert(
+      {
+        user_id: user.id,
+        tmdb_id: input.tmdbId,
+        media_type: input.mediaType,
+        title: input.title,
+        poster_path: input.posterPath ?? null,
+        backdrop_path: input.backdropPath ?? null,
+        overview: input.overview,
+        release_date_or_first_air_date: input.releaseDateOrFirstAirDate ?? null,
+      },
+      { onConflict: "user_id,tmdb_id,media_type" },
+    )
+    .select("id")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function removeWatchlistItem(watchlistItemId: string) {
+  const { supabase } = await requireSupabaseUser();
+  const { error } = await supabase
+    .from("watchlist_items")
+    .delete()
+    .eq("id", watchlistItemId);
 
   if (error) {
     throw new Error(error.message);

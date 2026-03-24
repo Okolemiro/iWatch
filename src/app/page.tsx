@@ -6,9 +6,11 @@ import { MediaCard } from "@/features/library/media-card";
 import { SearchPanel } from "@/features/search/search-panel";
 import { requireUser } from "@/lib/auth";
 import { getDashboardData } from "@/lib/data/dashboard";
+import { getWatchlistItems } from "@/lib/data/watchlist";
 
 export default async function HomePage() {
   await requireUser("/");
+  const watchlistItems = await getWatchlistItems();
   const { stats, recentItems } = await getDashboardData();
 
   return (
@@ -32,19 +34,71 @@ export default async function HomePage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <Link
                 href="/library"
-                className="focus-ring inline-flex rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)]"
+                className="focus-ring inline-flex items-center justify-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)]"
               >
                 Open library
               </Link>
-              <div className="rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 text-sm text-[var(--color-text-muted)]">
-                Everything you track is isolated to your own account.
-              </div>
+              <Link
+                href="/watchlist"
+                className="focus-ring inline-flex items-center justify-center rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 text-center text-sm font-medium text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-strong)]"
+              >
+                Open watchlist
+              </Link>
             </div>
           </div>
         </section>
 
         <StatsOverview stats={stats} />
         <SearchPanel />
+
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="eyebrow">Saved for later</p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight">Your watchlist</h2>
+            </div>
+            <Link href="/watchlist" className="text-sm font-semibold text-[var(--color-accent)]">
+              View all
+            </Link>
+          </div>
+
+          {watchlistItems.length ? (
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+              {watchlistItems.slice(0, 4).map((item) => (
+                <MediaCard
+                  key={item.id}
+                  item={{
+                    id: item.id,
+                    tmdbId: item.tmdbId,
+                    title: item.title,
+                    posterPath: item.posterPath,
+                    backdropPath: item.backdropPath,
+                    overview: item.overview,
+                    mediaType: item.mediaType,
+                    releaseDateOrFirstAirDate: item.releaseDateOrFirstAirDate,
+                    genres: [],
+                    addedAt: item.addedAt,
+                    updatedAt: item.addedAt,
+                    progressPercentage: 0,
+                    status: "not-started",
+                    watchedEpisodes: 0,
+                    totalEpisodes: 0,
+                    rating: null,
+                    watched: false,
+                    href: "/watchlist",
+                    metaLabel: "Watchlist",
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No titles in your watchlist yet"
+              description="Use the dashboard search to save shows or movies for later."
+              actionLabel="Browse titles"
+            />
+          )}
+        </section>
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">

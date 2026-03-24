@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Film, Home, LibraryBig, ShieldCheck } from "lucide-react";
+import { Bookmark, Film, Home, LibraryBig, ShieldCheck } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { getSessionUser, getUserDisplayName } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -39,6 +39,13 @@ export async function AppHeader() {
           >
             <LibraryBig className="size-4" />
             Library
+          </Link>
+          <Link
+            href="/watchlist"
+            className="focus-ring inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--color-surface-strong)]"
+          >
+            <Bookmark className="size-4" />
+            Watchlist
           </Link>
 
           {user ? (

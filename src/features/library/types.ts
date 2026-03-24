@@ -18,4 +18,6 @@ export type LibraryCardItem = {
   totalEpisodes: number;
   rating: number | null;
   watched: boolean;
+  href?: string;
+  metaLabel?: string;
 };

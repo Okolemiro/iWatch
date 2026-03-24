@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --color-page: #f5f0e8;
-  --color-surface: rgba(255, 252, 248, 0.84);
-  --color-surface-strong: #fffaf2;
-  --color-text: #18202f;
-  --color-text-muted: #617087;
-  --color-border: rgba(24, 32, 47, 0.1);
-  --color-accent: #ff7b46;
-  --color-accent-strong: #ed5f2f;
-  --color-accent-soft: rgba(255, 123, 70, 0.14);
-  --color-success: #167c61;
-  --color-warning: #a26711;
-  --color-danger: #cb3d4b;
-  --shadow-panel: 0 20px 55px rgba(32, 44, 76, 0.08);
+  --color-page: #060606;
+  --color-surface: rgba(13, 13, 15, 0.92);
+  --color-surface-strong: #121215;
+  --color-text: #fafafa;
+  --color-text-muted: #a1a1aa;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-accent: #8b3dff;
+  --color-accent-strong: #6e1fff;
+  --color-accent-soft: rgba(139, 61, 255, 0.16);
+  --color-success: #7c3aed;
+  --color-warning: #a855f7;
+  --color-danger: #fb7185;
+  --shadow-panel: 0 22px 60px rgba(0, 0, 0, 0.34);
 }
 
 @theme inline {
@@ -24,19 +24,19 @@
 }
 
 .dark {
-  --color-page: #09111f;
-  --color-surface: rgba(13, 22, 38, 0.86);
-  --color-surface-strong: #122036;
-  --color-text: #f5f8ff;
-  --color-text-muted: #9fb0c8;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-accent: #ff9668;
-  --color-accent-strong: #ff7644;
-  --color-accent-soft: rgba(255, 150, 104, 0.16);
-  --color-success: #4fd4ad;
-  --color-warning: #f4b251;
-  --color-danger: #ff7e8c;
-  --shadow-panel: 0 22px 65px rgba(2, 8, 23, 0.32);
+  --color-page: #000000;
+  --color-surface: rgba(10, 10, 12, 0.95);
+  --color-surface-strong: #131316;
+  --color-text: #fafafa;
+  --color-text-muted: #a1a1aa;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-accent: #9b5cff;
+  --color-accent-strong: #7b2cff;
+  --color-accent-soft: rgba(155, 92, 255, 0.18);
+  --color-success: #8b5cf6;
+  --color-warning: #c084fc;
+  --color-danger: #fb7185;
+  --shadow-panel: 0 22px 65px rgba(0, 0, 0, 0.42);
 }
 
 * {
@@ -51,9 +51,9 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at top left, rgba(255, 162, 98, 0.24), transparent 24%),
-    radial-gradient(circle at top right, rgba(86, 177, 255, 0.12), transparent 18%),
-    linear-gradient(180deg, var(--color-page), color-mix(in srgb, var(--color-page) 82%, #08111d 18%));
+    radial-gradient(circle at top left, rgba(139, 61, 255, 0.2), transparent 20%),
+    radial-gradient(circle at top right, rgba(139, 61, 255, 0.1), transparent 18%),
+    linear-gradient(180deg, var(--color-page), #000000);
   color: var(--color-text);
   font-family: var(--font-sans);
 }
@@ -68,6 +68,20 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button,
+[role="button"],
+a[href],
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
 }
 
 ::selection {
@@ -94,9 +108,9 @@ textarea {
   position: relative;
   border: 1px solid color-mix(in srgb, var(--color-border) 85%, white 15%);
   background:
-    linear-gradient(145deg, color-mix(in srgb, var(--color-surface-strong) 88%, transparent), color-mix(in srgb, var(--color-surface) 72%, transparent)),
-    radial-gradient(circle at top right, rgba(255, 126, 83, 0.18), transparent 26%),
-    radial-gradient(circle at 15% 20%, rgba(93, 181, 255, 0.16), transparent 20%);
+    linear-gradient(145deg, color-mix(in srgb, var(--color-surface-strong) 90%, transparent), color-mix(in srgb, var(--color-surface) 78%, transparent)),
+    radial-gradient(circle at top right, rgba(139, 61, 255, 0.24), transparent 28%),
+    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.08), transparent 16%);
   box-shadow: var(--shadow-panel);
 }
 

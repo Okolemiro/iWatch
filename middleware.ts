@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-const protectedPrefixes = ["/library", "/movies", "/shows"];
+const protectedPrefixes = ["/library", "/movies", "/shows", "/watchlist"];
 
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

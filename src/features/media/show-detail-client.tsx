@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Circle } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProgressBar } from "@/components/progress-bar";
@@ -37,7 +37,7 @@ export function ShowDetailClient({
   seasons,
 }: ShowDetailsClientProps) {
   const router = useRouter();
-  const [openSeasons, setOpenSeasons] = useState<number[]>(seasons.map((season) => season.seasonNumber));
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>(seasons[0]?.id ?? "");
 
   async function patch(url: string, payload: Record<string, unknown>) {
     const response = await fetch(url, {
@@ -55,13 +55,7 @@ export function ShowDetailClient({
     router.refresh();
   }
 
-  function toggleSeason(seasonNumber: number) {
-    setOpenSeasons((current) =>
-      current.includes(seasonNumber)
-        ? current.filter((value) => value !== seasonNumber)
-        : [...current, seasonNumber],
-    );
-  }
+  const selectedSeason = seasons.find((season) => season.id === selectedSeasonId) ?? seasons[0];
 
   return (
     <section className="space-y-6">
@@ -74,110 +68,120 @@ export function ShowDetailClient({
         />
       </div>
 
-      {seasons.map((season) => {
-        const isOpen = openSeasons.includes(season.seasonNumber);
+      {selectedSeason ? (
+        <section className="panel rounded-[2rem] p-5 lg:p-6">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
+            <div>
+              <p className="eyebrow">Season browser</p>
+              <h2 className="mt-3 text-xl font-semibold tracking-tight">
+                Season {selectedSeason.seasonNumber}: {selectedSeason.name}
+              </h2>
+              <p className="mt-2 text-sm text-[var(--color-text-muted)]">
+                {selectedSeason.watchedEpisodes}/{selectedSeason.episodeCount} episodes watched
+              </p>
+            </div>
 
-        return (
-          <section key={season.id} className="panel rounded-[2rem] p-5 lg:p-6">
+            <label className="grid gap-2 text-sm">
+              <span className="font-medium text-[var(--color-text-muted)]">Choose season</span>
+              <div className="relative">
+                <select
+                  value={selectedSeason.id}
+                  onChange={(event) => setSelectedSeasonId(event.target.value)}
+                  className="focus-ring w-full appearance-none rounded-[1.2rem] border border-[var(--color-border)] bg-[var(--color-surface-strong)] px-4 py-3 pr-11"
+                >
+                  {seasons.map((season) => (
+                    <option key={season.id} value={season.id}>
+                      Season {season.seasonNumber}: {season.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
+              </div>
+            </label>
+          </div>
+
+          <ProgressBar value={selectedSeason.progressPercentage} className="mt-5" />
+
+          <div className="mt-5 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => toggleSeason(season.seasonNumber)}
-              className="focus-ring flex w-full items-center justify-between gap-4 text-left"
+              onClick={() => patch(`/api/seasons/${selectedSeason.id}/watched`, { watched: true })}
+              className="focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-[var(--color-accent)] px-4 py-2 text-center text-sm font-semibold text-white"
             >
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="text-xl font-semibold tracking-tight">
-                    Season {season.seasonNumber}: {season.name}
-                  </h2>
-                  <span className="rounded-full bg-[var(--color-surface-strong)] px-3 py-1 text-xs font-semibold text-[var(--color-text-muted)]">
-                    {season.episodeCount} episodes
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-                  {season.watchedEpisodes}/{season.episodeCount} watched
-                </p>
-              </div>
-              <ChevronDown className={`size-5 transition ${isOpen ? "rotate-180" : ""}`} />
+              <Check className="size-4" />
+              Mark season watched
             </button>
+            <button
+              type="button"
+              onClick={() => patch(`/api/seasons/${selectedSeason.id}/watched`, { watched: false })}
+              className="focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] px-4 py-2 text-center text-sm font-medium"
+            >
+              <Circle className="size-4" />
+              Mark season unwatched
+            </button>
+          </div>
 
-            <ProgressBar value={season.progressPercentage} className="mt-5" />
+          <div className="mt-5 max-w-sm">
+            <RatingInput
+              key={selectedSeason.rating?.toFixed(1) ?? `season-${selectedSeason.id}-empty`}
+              initialValue={selectedSeason.rating}
+              label={`Season ${selectedSeason.seasonNumber} rating`}
+              onSave={(value) => patch(`/api/seasons/${selectedSeason.id}/tracking`, { rating: value })}
+            />
+          </div>
 
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => patch(`/api/seasons/${season.id}/watched`, { watched: true })}
-                className="focus-ring rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white"
-              >
-                Mark season watched
-              </button>
-              <button
-                type="button"
-                onClick={() => patch(`/api/seasons/${season.id}/watched`, { watched: false })}
-                className="focus-ring rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
-              >
-                Mark season unwatched
-              </button>
+          <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[var(--color-border)]">
+            <div className="grid grid-cols-[minmax(0,1.1fr)_120px_120px_160px] gap-4 bg-[var(--color-surface-strong)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
+              <span>Episode</span>
+              <span>Air date</span>
+              <span>Runtime</span>
+              <span>Status</span>
             </div>
-
-            <div className="mt-5 max-w-sm">
-              <RatingInput
-                key={season.rating?.toFixed(1) ?? `season-${season.id}-empty`}
-                initialValue={season.rating}
-                label={`Season ${season.seasonNumber} rating`}
-                onSave={(value) => patch(`/api/seasons/${season.id}/tracking`, { rating: value })}
-              />
+            <div className="divide-y divide-[var(--color-border)]">
+              {selectedSeason.episodes.map((episode) => (
+                <div
+                  key={episode.id}
+                  className="grid grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1.1fr)_120px_120px_160px_220px]"
+                >
+                  <div>
+                    <p className="font-semibold">
+                      {episode.episodeNumber}. {episode.name}
+                    </p>
+                  </div>
+                  <p className="text-sm text-[var(--color-text-muted)]">{formatDate(episode.airDate)}</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">{formatRuntime(episode.runtime)}</p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      patch(`/api/episodes/${episode.id}/tracking`, {
+                        watched: !episode.watched,
+                      })
+                    }
+                    className={`focus-ring inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-center text-sm font-medium transition ${
+                      episode.watched
+                        ? "bg-[var(--color-accent)] text-white"
+                        : "border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-strong)]"
+                    }`}
+                  >
+                    {episode.watched ? <Check className="size-4" /> : <Circle className="size-4" />}
+                    {episode.watched ? "Watched" : "Unwatched"}
+                  </button>
+                  <RatingInput
+                    key={episode.rating?.toFixed(1) ?? `episode-${episode.id}-empty`}
+                    initialValue={episode.rating}
+                    label={`Episode ${episode.episodeNumber} rating`}
+                    onSave={(value) =>
+                      patch(`/api/episodes/${episode.id}/tracking`, {
+                        rating: value,
+                      })
+                    }
+                  />
+                </div>
+              ))}
             </div>
-
-            {isOpen ? (
-              <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[var(--color-border)]">
-                <div className="grid grid-cols-[minmax(0,1.1fr)_120px_120px_140px] gap-4 bg-[var(--color-surface-strong)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-                  <span>Episode</span>
-                  <span>Air date</span>
-                  <span>Runtime</span>
-                  <span>Tracking</span>
-                </div>
-                <div className="divide-y divide-[var(--color-border)]">
-                  {season.episodes.map((episode) => (
-                    <div
-                      key={episode.id}
-                      className="grid grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1.1fr)_120px_120px_140px_220px]"
-                    >
-                      <div>
-                        <p className="font-semibold">
-                          {episode.episodeNumber}. {episode.name}
-                        </p>
-                      </div>
-                      <p className="text-sm text-[var(--color-text-muted)]">{formatDate(episode.airDate)}</p>
-                      <p className="text-sm text-[var(--color-text-muted)]">{formatRuntime(episode.runtime)}</p>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          patch(`/api/episodes/${episode.id}/tracking`, {
-                            watched: !episode.watched,
-                          })
-                        }
-                        className="focus-ring rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
-                      >
-                        {episode.watched ? "Watched" : "Unwatched"}
-                      </button>
-                      <RatingInput
-                        key={episode.rating?.toFixed(1) ?? `episode-${episode.id}-empty`}
-                        initialValue={episode.rating}
-                        label={`Episode ${episode.episodeNumber} rating`}
-                        onSave={(value) =>
-                          patch(`/api/episodes/${episode.id}/tracking`, {
-                            rating: value,
-                          })
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </section>
-        );
-      })}
+          </div>
+        </section>
+      ) : null}
     </section>
   );
 }
