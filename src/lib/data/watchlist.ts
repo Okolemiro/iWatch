@@ -3,6 +3,24 @@ import { notFound } from "next/navigation";
 import { getMovieDetails, getSeasonDetails, getTvDetails } from "@/lib/tmdb/client";
 import { getStandardSeasons, mapMoviePayload, mapTvPayload } from "@/lib/tmdb/mappers";
 import { getProgressPercentage } from "@/lib/progress";
+import { asSingle } from "@/lib/serializers";
+
+type WatchlistMediaTitleRow = {
+  tmdb_id: number;
+  media_type: "movie" | "tv";
+  title: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string;
+  release_date_or_first_air_date: string | null;
+  genres_json: string[] | string | null;
+};
+
+type UserWatchlistItemRow = {
+  id: string;
+  added_at: string;
+  media_title: WatchlistMediaTitleRow | WatchlistMediaTitleRow[] | null;
+};
 
 export type WatchlistItem = {
   id: string;
@@ -16,37 +34,62 @@ export type WatchlistItem = {
   addedAt: string;
 };
 
+const watchlistSelect = `
+  id,
+  added_at,
+  media_title:media_titles!inner(
+    tmdb_id,
+    media_type,
+    title,
+    poster_path,
+    backdrop_path,
+    overview,
+    release_date_or_first_air_date,
+    genres_json
+  )
+`;
+
+function serializeWatchlistItem(item: UserWatchlistItemRow): WatchlistItem {
+  const mediaTitle = asSingle(item.media_title);
+
+  if (!mediaTitle) {
+    throw new Error("Watchlist item is missing its media title.");
+  }
+
+  return {
+    id: item.id,
+    tmdbId: mediaTitle.tmdb_id,
+    mediaType: mediaTitle.media_type,
+    title: mediaTitle.title,
+    posterPath: mediaTitle.poster_path,
+    backdropPath: mediaTitle.backdrop_path,
+    overview: mediaTitle.overview,
+    releaseDateOrFirstAirDate: mediaTitle.release_date_or_first_air_date,
+    addedAt: item.added_at,
+  };
+}
+
 export async function getWatchlistItems() {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from("watchlist_items")
-    .select("id, tmdb_id, media_type, title, poster_path, backdrop_path, overview, release_date_or_first_air_date, added_at")
+    .from("user_watchlist_items")
+    .select(watchlistSelect)
     .order("added_at", { ascending: false });
 
   if (error) {
     throw new Error(error.message);
   }
 
-  return (data ?? []).map((item) => ({
-    id: item.id,
-    tmdbId: item.tmdb_id,
-    mediaType: item.media_type,
-    title: item.title,
-    posterPath: item.poster_path,
-    backdropPath: item.backdrop_path,
-    overview: item.overview,
-    releaseDateOrFirstAirDate: item.release_date_or_first_air_date,
-    addedAt: item.added_at,
-  })) satisfies WatchlistItem[];
+  return (data as UserWatchlistItemRow[] | null)?.map(serializeWatchlistItem) ?? [];
 }
 
 export async function getWatchlistItemByTmdbId(tmdbId: number, mediaType: "movie" | "tv") {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from("watchlist_items")
-    .select("id, tmdb_id, media_type, title, poster_path, backdrop_path, overview, release_date_or_first_air_date")
-    .eq("tmdb_id", tmdbId)
-    .eq("media_type", mediaType)
+    .from("user_watchlist_items")
+    .select(watchlistSelect)
+    .eq("media_titles.tmdb_id", tmdbId)
+    .eq("media_titles.media_type", mediaType)
     .maybeSingle();
 
   if (error) {
@@ -57,16 +100,7 @@ export async function getWatchlistItemByTmdbId(tmdbId: number, mediaType: "movie
     notFound();
   }
 
-  return {
-    id: data.id,
-    tmdbId: data.tmdb_id,
-    mediaType: data.media_type,
-    title: data.title,
-    posterPath: data.poster_path,
-    backdropPath: data.backdrop_path,
-    overview: data.overview,
-    releaseDateOrFirstAirDate: data.release_date_or_first_air_date,
-  };
+  return serializeWatchlistItem(data as UserWatchlistItemRow);
 }
 
 export async function getWatchlistMovieDetailsPageData(tmdbId: number) {

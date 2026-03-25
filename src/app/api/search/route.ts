@@ -20,8 +20,8 @@ export async function GET(request: Request) {
 
     const [results, libraryItems, watchlistItems] = await Promise.all([
       searchTmdb(query),
-      auth.supabase.from("library_items").select("tmdb_id, media_type"),
-      auth.supabase.from("watchlist_items").select("tmdb_id, media_type"),
+      auth.supabase.from("user_library_items").select("media_title:media_titles!inner(tmdb_id, media_type)"),
+      auth.supabase.from("user_watchlist_items").select("media_title:media_titles!inner(tmdb_id, media_type)"),
     ]);
 
     const libraryItemsData = libraryItems.data ?? [];
@@ -33,8 +33,18 @@ export async function GET(request: Request) {
       throw new Error(libraryItemsError?.message || watchlistItemsError?.message);
     }
 
-    const librarySet = new Set(libraryItemsData.map((item) => `${item.media_type}-${item.tmdb_id}`));
-    const watchlistSet = new Set(watchlistItemsData.map((item) => `${item.media_type}-${item.tmdb_id}`));
+    const librarySet = new Set(
+      libraryItemsData.map((item) => {
+        const mediaTitle = Array.isArray(item.media_title) ? item.media_title[0] : item.media_title;
+        return `${mediaTitle?.media_type}-${mediaTitle?.tmdb_id}`;
+      }),
+    );
+    const watchlistSet = new Set(
+      watchlistItemsData.map((item) => {
+        const mediaTitle = Array.isArray(item.media_title) ? item.media_title[0] : item.media_title;
+        return `${mediaTitle?.media_type}-${mediaTitle?.tmdb_id}`;
+      }),
+    );
 
     return NextResponse.json({
       results: results.map((result) => {

@@ -1,10 +1,10 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { libraryItemCardSelect, serializeLibraryCard, type LibraryItemRow } from "@/lib/serializers";
+import { libraryItemCardSelect, serializeLibraryCard, type UserLibraryItemRow } from "@/lib/serializers";
 
 export async function getLibraryItems() {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from("library_items")
+    .from("user_library_items")
     .select(libraryItemCardSelect)
     .order("updated_at", { ascending: false });
 
@@ -12,5 +12,5 @@ export async function getLibraryItems() {
     throw new Error(error.message);
   }
 
-  return (data as LibraryItemRow[] | null)?.map(serializeLibraryCard) ?? [];
+  return (data as UserLibraryItemRow[] | null)?.map(serializeLibraryCard) ?? [];
 }

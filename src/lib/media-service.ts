@@ -4,6 +4,17 @@ import { getStandardSeasons, mapMoviePayload, mapTvPayload } from "@/lib/tmdb/ma
 import { parseNullableRating } from "@/lib/ratings";
 import type { MediaType } from "@/lib/serializers";
 
+type MediaTitleInput = {
+  tmdbId: number;
+  mediaType: MediaType;
+  title: string;
+  posterPath?: string | null;
+  backdropPath?: string | null;
+  overview: string;
+  releaseDateOrFirstAirDate?: string | null;
+  genresJson?: string;
+};
+
 async function requireSupabaseUser() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -17,22 +28,29 @@ async function requireSupabaseUser() {
   return { supabase, user };
 }
 
-async function cleanupFailedInsert(libraryItemId: string | null) {
-  if (!libraryItemId) {
-    return;
-  }
-
+async function getExistingMediaTitleId(tmdbId: number, mediaType: MediaType) {
   const { supabase } = await requireSupabaseUser();
-  await supabase.from("library_items").delete().eq("id", libraryItemId);
-}
-
-export async function addTitleToLibrary(tmdbId: number, mediaType: MediaType) {
-  const { supabase, user } = await requireSupabaseUser();
-  const { data: existing, error: existingError } = await supabase
-    .from("library_items")
+  const { data, error } = await supabase
+    .from("media_titles")
     .select("id")
     .eq("tmdb_id", tmdbId)
     .eq("media_type", mediaType)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.id ?? null;
+}
+
+async function ensureMediaTitle(input: MediaTitleInput) {
+  const { supabase } = await requireSupabaseUser();
+  const { data: existing, error: existingError } = await supabase
+    .from("media_titles")
+    .select("id")
+    .eq("tmdb_id", input.tmdbId)
+    .eq("media_type", input.mediaType)
     .maybeSingle();
 
   if (existingError) {
@@ -40,196 +58,373 @@ export async function addTitleToLibrary(tmdbId: number, mediaType: MediaType) {
   }
 
   if (existing) {
-    await supabase
-      .from("watchlist_items")
-      .delete()
-      .eq("tmdb_id", tmdbId)
-      .eq("media_type", mediaType);
+    return existing.id;
+  }
 
+  const { data, error } = await supabase
+    .from("media_titles")
+    .insert({
+      tmdb_id: input.tmdbId,
+      media_type: input.mediaType,
+      title: input.title,
+      poster_path: input.posterPath ?? null,
+      backdrop_path: input.backdropPath ?? null,
+      overview: input.overview,
+      release_date_or_first_air_date: input.releaseDateOrFirstAirDate ?? null,
+      genres_json: input.genresJson ? JSON.parse(input.genresJson) : [],
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      const mediaTitleId = await getExistingMediaTitleId(input.tmdbId, input.mediaType);
+
+      if (mediaTitleId) {
+        return mediaTitleId;
+      }
+    }
+
+    throw new Error(error.message);
+  }
+
+  return data.id;
+}
+
+async function ensureUserLibraryItem(userId: string, mediaTitleId: string) {
+  const { supabase } = await requireSupabaseUser();
+  const { data: existing, error: existingError } = await supabase
+    .from("user_library_items")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("media_title_id", mediaTitleId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(existingError.message);
+  }
+
+  if (existing) {
     return existing;
   }
 
-  let libraryItemId: string | null = null;
+  const { data, error } = await supabase
+    .from("user_library_items")
+    .insert({
+      user_id: userId,
+      media_title_id: mediaTitleId,
+    })
+    .select("id")
+    .single();
 
-  try {
-    if (mediaType === "movie") {
-      const details = mapMoviePayload(await getMovieDetails(tmdbId));
-      const { data: libraryItem, error: insertLibraryError } = await supabase
-        .from("library_items")
-        .insert({
-          user_id: user.id,
-          tmdb_id: details.tmdbId,
-          media_type: mediaType,
-          title: details.title,
-          poster_path: details.posterPath,
-          backdrop_path: details.backdropPath,
-          overview: details.overview,
-          release_date_or_first_air_date: details.releaseDateOrFirstAirDate,
-          genres_json: JSON.parse(details.genresJson),
-        })
+  if (error) {
+    if (error.code === "23505") {
+      const { data: duplicate, error: duplicateError } = await supabase
+        .from("user_library_items")
         .select("id")
+        .eq("user_id", userId)
+        .eq("media_title_id", mediaTitleId)
         .single();
 
-      if (insertLibraryError) {
-        throw insertLibraryError;
+      if (duplicateError) {
+        throw new Error(duplicateError.message);
       }
 
-      libraryItemId = libraryItem.id;
-
-      const [{ error: detailError }, { error: trackingError }] = await Promise.all([
-        supabase.from("movie_details").insert({
-          library_item_id: libraryItem.id,
-          runtime: details.runtime,
-        }),
-        supabase.from("movie_trackings").insert({
-          user_id: user.id,
-          library_item_id: libraryItem.id,
-        }),
-      ]);
-
-      if (detailError || trackingError) {
-        throw detailError || trackingError;
-      }
-
-      await supabase
-        .from("watchlist_items")
-        .delete()
-        .eq("tmdb_id", details.tmdbId)
-        .eq("media_type", mediaType);
-
-      return libraryItem;
+      return duplicate;
     }
 
-    const showDetails = await getTvDetails(tmdbId);
-    const seasons = getStandardSeasons(showDetails);
-    const seasonDetails = await Promise.all(
-      seasons.map((season) => getSeasonDetails(tmdbId, season.season_number)),
-    );
-    const payload = mapTvPayload(showDetails, seasonDetails);
+    throw new Error(error.message);
+  }
 
-    const { data: libraryItem, error: insertLibraryError } = await supabase
-      .from("library_items")
-      .insert({
-        user_id: user.id,
-        tmdb_id: payload.tmdbId,
-        media_type: mediaType,
-        title: payload.title,
-        poster_path: payload.posterPath,
-        backdrop_path: payload.backdropPath,
-        overview: payload.overview,
-        release_date_or_first_air_date: payload.releaseDateOrFirstAirDate,
-        genres_json: JSON.parse(payload.genresJson),
-      })
-      .select("id")
-      .single();
+  return data;
+}
 
-    if (insertLibraryError) {
-      throw insertLibraryError;
-    }
+async function ensureUserWatchlistRemoval(userId: string, mediaTitleId: string) {
+  const { supabase } = await requireSupabaseUser();
+  const { error } = await supabase
+    .from("user_watchlist_items")
+    .delete()
+    .eq("user_id", userId)
+    .eq("media_title_id", mediaTitleId);
 
-    libraryItemId = libraryItem.id;
+  if (error) {
+    throw new Error(error.message);
+  }
+}
 
-    const [{ data: tvShowDetails, error: tvShowDetailsError }, { error: showTrackingError }] = await Promise.all([
-      supabase
-        .from("tv_show_details")
-        .insert({
-          library_item_id: libraryItem.id,
-          total_seasons: payload.totalSeasons,
-        })
+async function ensureMovieDetails(mediaTitleId: string, runtime: number | null) {
+  const { supabase } = await requireSupabaseUser();
+  const { data: existing, error: existingError } = await supabase
+    .from("media_movie_details")
+    .select("id")
+    .eq("media_title_id", mediaTitleId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(existingError.message);
+  }
+
+  if (existing) {
+    return;
+  }
+
+  const { error } = await supabase.from("media_movie_details").insert({
+    media_title_id: mediaTitleId,
+    runtime,
+  });
+
+  if (error && error.code !== "23505") {
+    throw new Error(error.message);
+  }
+}
+
+async function ensureMovieTracking(userId: string, libraryItemId: string) {
+  const { supabase } = await requireSupabaseUser();
+  const { error } = await supabase.from("user_movie_trackings").upsert(
+    {
+      user_id: userId,
+      library_item_id: libraryItemId,
+    },
+    { onConflict: "library_item_id", ignoreDuplicates: true },
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function ensureTvShowDetails(mediaTitleId: string, totalSeasons: number) {
+  const { supabase } = await requireSupabaseUser();
+  const { data: existing, error: existingError } = await supabase
+    .from("media_tv_show_details")
+    .select("id")
+    .eq("media_title_id", mediaTitleId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(existingError.message);
+  }
+
+  if (existing) {
+    return existing.id;
+  }
+
+  const { data, error } = await supabase
+    .from("media_tv_show_details")
+    .insert({
+      media_title_id: mediaTitleId,
+      total_seasons: totalSeasons,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      const { data: duplicate, error: duplicateError } = await supabase
+        .from("media_tv_show_details")
         .select("id")
-        .single(),
-      supabase.from("show_trackings").insert({
-        user_id: user.id,
-        library_item_id: libraryItem.id,
-      }),
-    ]);
+        .eq("media_title_id", mediaTitleId)
+        .single();
 
-    if (tvShowDetailsError || showTrackingError || !tvShowDetails) {
-      throw tvShowDetailsError || showTrackingError || new Error("Could not create TV show details.");
+      if (duplicateError) {
+        throw new Error(duplicateError.message);
+      }
+
+      return duplicate.id;
     }
 
-    const { data: insertedSeasons, error: insertSeasonsError } = await supabase
-      .from("seasons")
-      .insert(
-        payload.seasons.map((season) => ({
-          tv_show_details_id: tvShowDetails.id,
-          season_number: season.seasonNumber,
-          name: season.name,
-          poster_path: season.posterPath,
-          episode_count: season.episodeCount,
-        })),
-      )
-      .select("id, season_number");
+    throw new Error(error.message);
+  }
 
-    if (insertSeasonsError || !insertedSeasons) {
-      throw insertSeasonsError || new Error("Could not create seasons.");
+  return data.id;
+}
+
+async function ensureTvHierarchy(
+  userId: string,
+  mediaTitleId: string,
+  libraryItemId: string,
+  payload: ReturnType<typeof mapTvPayload>,
+) {
+  const { supabase } = await requireSupabaseUser();
+  const tvShowDetailsId = await ensureTvShowDetails(mediaTitleId, payload.totalSeasons);
+
+  const { error: seasonsUpsertError } = await supabase.from("media_seasons").upsert(
+    payload.seasons.map((season) => ({
+      tv_show_details_id: tvShowDetailsId,
+      season_number: season.seasonNumber,
+      name: season.name,
+      poster_path: season.posterPath,
+      episode_count: season.episodeCount,
+    })),
+    { onConflict: "tv_show_details_id,season_number", ignoreDuplicates: true },
+  );
+
+  if (seasonsUpsertError) {
+    throw new Error(seasonsUpsertError.message);
+  }
+
+  const { data: insertedSeasons, error: seasonSelectError } = await supabase
+    .from("media_seasons")
+    .select("id, season_number")
+    .eq("tv_show_details_id", tvShowDetailsId);
+
+  if (seasonSelectError || !insertedSeasons) {
+    throw new Error(seasonSelectError?.message || "Could not load seasons.");
+  }
+
+  const seasonIdByNumber = new Map(insertedSeasons.map((season) => [season.season_number, season.id]));
+
+  const episodeRows = payload.seasons.flatMap((season) =>
+    season.episodes.map((episode) => ({
+      season_id: seasonIdByNumber.get(season.seasonNumber)!,
+      episode_number: episode.episodeNumber,
+      name: episode.name,
+      air_date: episode.airDate,
+      runtime: episode.runtime,
+    })),
+  );
+
+  if (episodeRows.length) {
+    const { error: episodeUpsertError } = await supabase.from("media_episodes").upsert(episodeRows, {
+      onConflict: "season_id,episode_number",
+      ignoreDuplicates: true,
+    });
+
+    if (episodeUpsertError) {
+      throw new Error(episodeUpsertError.message);
     }
+  }
 
-    const seasonIdByNumber = new Map(insertedSeasons.map((season) => [season.season_number, season.id]));
+  const seasonIds = Array.from(seasonIdByNumber.values());
+  const { data: insertedEpisodes, error: episodeSelectError } = await supabase
+    .from("media_episodes")
+    .select("id, season_id, episode_number")
+    .in("season_id", seasonIds);
 
-    const { error: seasonTrackingError } = await supabase.from("season_trackings").insert(
-      payload.seasons.map((season) => ({
-        user_id: user.id,
-        season_id: seasonIdByNumber.get(season.seasonNumber)!,
-      })),
-    );
+  if (episodeSelectError || !insertedEpisodes) {
+    throw new Error(episodeSelectError?.message || "Could not load episodes.");
+  }
 
-    if (seasonTrackingError) {
-      throw seasonTrackingError;
-    }
+  const episodeIdByKey = new Map(
+    insertedEpisodes.map((episode) => [`${episode.season_id}:${episode.episode_number}`, episode.id]),
+  );
 
-    const episodeRows = payload.seasons.flatMap((season) =>
-      season.episodes.map((episode) => ({
-        season_id: seasonIdByNumber.get(season.seasonNumber)!,
-        episode_number: episode.episodeNumber,
-        name: episode.name,
-        air_date: episode.airDate,
-        runtime: episode.runtime,
-      })),
-    );
+  const { error: showTrackingError } = await supabase.from("user_show_trackings").upsert(
+    {
+      user_id: userId,
+      library_item_id: libraryItemId,
+    },
+    { onConflict: "library_item_id", ignoreDuplicates: true },
+  );
 
-    const { data: insertedEpisodes, error: insertEpisodesError } = await supabase
-      .from("episodes")
-      .insert(episodeRows)
-      .select("id, season_id, episode_number");
+  if (showTrackingError) {
+    throw new Error(showTrackingError.message);
+  }
 
-    if (insertEpisodesError || !insertedEpisodes) {
-      throw insertEpisodesError || new Error("Could not create episodes.");
-    }
+  const { error: seasonTrackingError } = await supabase.from("user_season_trackings").upsert(
+    payload.seasons.map((season) => ({
+      user_id: userId,
+      season_id: seasonIdByNumber.get(season.seasonNumber)!,
+    })),
+    { onConflict: "user_id,season_id", ignoreDuplicates: true },
+  );
 
-    const episodeIdByKey = new Map(
-      insertedEpisodes.map((episode) => [`${episode.season_id}:${episode.episode_number}`, episode.id]),
-    );
+  if (seasonTrackingError) {
+    throw new Error(seasonTrackingError.message);
+  }
 
-    const { error: episodeTrackingError } = await supabase.from("episode_trackings").insert(
-      payload.seasons.flatMap((season) =>
-        season.episodes.map((episode) => ({
-          user_id: user.id,
-          episode_id: episodeIdByKey.get(`${seasonIdByNumber.get(season.seasonNumber)!}:${episode.episodeNumber}`)!,
-        })),
-      ),
+  const episodeTrackingRows = payload.seasons.flatMap((season) =>
+    season.episodes.map((episode) => ({
+      user_id: userId,
+      episode_id: episodeIdByKey.get(`${seasonIdByNumber.get(season.seasonNumber)!}:${episode.episodeNumber}`)!,
+    })),
+  );
+
+  if (episodeTrackingRows.length) {
+    const { error: episodeTrackingError } = await supabase.from("user_episode_trackings").upsert(
+      episodeTrackingRows,
+      { onConflict: "user_id,episode_id", ignoreDuplicates: true },
     );
 
     if (episodeTrackingError) {
-      throw episodeTrackingError;
+      throw new Error(episodeTrackingError.message);
+    }
+  }
+}
+
+export async function addTitleToLibrary(tmdbId: number, mediaType: MediaType) {
+  const { user } = await requireSupabaseUser();
+  const existingMediaTitleId = await getExistingMediaTitleId(tmdbId, mediaType);
+
+  if (existingMediaTitleId) {
+    const existingLibraryItem = await ensureUserLibraryItem(user.id, existingMediaTitleId);
+
+    if (mediaType === "movie") {
+      const details = mapMoviePayload(await getMovieDetails(tmdbId));
+      await ensureMovieDetails(existingMediaTitleId, details.runtime);
+      await ensureMovieTracking(user.id, existingLibraryItem.id);
+    } else {
+      const showDetails = await getTvDetails(tmdbId);
+      const seasons = getStandardSeasons(showDetails);
+      const seasonDetails = await Promise.all(
+        seasons.map((season) => getSeasonDetails(tmdbId, season.season_number)),
+      );
+      const payload = mapTvPayload(showDetails, seasonDetails);
+      await ensureTvHierarchy(user.id, existingMediaTitleId, existingLibraryItem.id, payload);
     }
 
-    await supabase
-      .from("watchlist_items")
-      .delete()
-      .eq("tmdb_id", payload.tmdbId)
-      .eq("media_type", mediaType);
+    await ensureUserWatchlistRemoval(user.id, existingMediaTitleId);
+    return existingLibraryItem;
+  }
+
+  if (mediaType === "movie") {
+    const details = mapMoviePayload(await getMovieDetails(tmdbId));
+    const mediaTitleId = await ensureMediaTitle({
+      tmdbId: details.tmdbId,
+      mediaType,
+      title: details.title,
+      posterPath: details.posterPath,
+      backdropPath: details.backdropPath,
+      overview: details.overview,
+      releaseDateOrFirstAirDate: details.releaseDateOrFirstAirDate,
+      genresJson: details.genresJson,
+    });
+    const libraryItem = await ensureUserLibraryItem(user.id, mediaTitleId);
+
+    await ensureMovieDetails(mediaTitleId, details.runtime);
+    await ensureMovieTracking(user.id, libraryItem.id);
+    await ensureUserWatchlistRemoval(user.id, mediaTitleId);
 
     return libraryItem;
-  } catch (error) {
-    await cleanupFailedInsert(libraryItemId);
-    throw error;
   }
+
+  const showDetails = await getTvDetails(tmdbId);
+  const seasons = getStandardSeasons(showDetails);
+  const seasonDetails = await Promise.all(
+    seasons.map((season) => getSeasonDetails(tmdbId, season.season_number)),
+  );
+  const payload = mapTvPayload(showDetails, seasonDetails);
+  const mediaTitleId = await ensureMediaTitle({
+    tmdbId: payload.tmdbId,
+    mediaType,
+    title: payload.title,
+    posterPath: payload.posterPath,
+    backdropPath: payload.backdropPath,
+    overview: payload.overview,
+    releaseDateOrFirstAirDate: payload.releaseDateOrFirstAirDate,
+    genresJson: payload.genresJson,
+  });
+  const libraryItem = await ensureUserLibraryItem(user.id, mediaTitleId);
+
+  await ensureTvHierarchy(user.id, mediaTitleId, libraryItem.id, payload);
+  await ensureUserWatchlistRemoval(user.id, mediaTitleId);
+
+  return libraryItem;
 }
 
 export async function removeLibraryItem(libraryItemId: string) {
   const { supabase } = await requireSupabaseUser();
-  const { error } = await supabase.from("library_items").delete().eq("id", libraryItemId);
+  const { error } = await supabase.from("user_library_items").delete().eq("id", libraryItemId);
 
   if (error) {
     throw new Error(error.message);
@@ -246,12 +441,21 @@ export async function addTitleToWatchlist(input: {
   releaseDateOrFirstAirDate?: string | null;
 }) {
   const { supabase, user } = await requireSupabaseUser();
+  const mediaTitleId = await ensureMediaTitle({
+    tmdbId: input.tmdbId,
+    mediaType: input.mediaType,
+    title: input.title,
+    posterPath: input.posterPath ?? null,
+    backdropPath: input.backdropPath ?? null,
+    overview: input.overview,
+    releaseDateOrFirstAirDate: input.releaseDateOrFirstAirDate ?? null,
+  });
 
   const { data: existingLibraryItem, error: existingLibraryError } = await supabase
-    .from("library_items")
+    .from("user_library_items")
     .select("id")
-    .eq("tmdb_id", input.tmdbId)
-    .eq("media_type", input.mediaType)
+    .eq("user_id", user.id)
+    .eq("media_title_id", mediaTitleId)
     .maybeSingle();
 
   if (existingLibraryError) {
@@ -263,24 +467,30 @@ export async function addTitleToWatchlist(input: {
   }
 
   const { data, error } = await supabase
-    .from("watchlist_items")
-    .upsert(
-      {
-        user_id: user.id,
-        tmdb_id: input.tmdbId,
-        media_type: input.mediaType,
-        title: input.title,
-        poster_path: input.posterPath ?? null,
-        backdrop_path: input.backdropPath ?? null,
-        overview: input.overview,
-        release_date_or_first_air_date: input.releaseDateOrFirstAirDate ?? null,
-      },
-      { onConflict: "user_id,tmdb_id,media_type" },
-    )
+    .from("user_watchlist_items")
+    .insert({
+      user_id: user.id,
+      media_title_id: mediaTitleId,
+    })
     .select("id")
     .single();
 
   if (error) {
+    if (error.code === "23505") {
+      const { data: duplicate, error: duplicateError } = await supabase
+        .from("user_watchlist_items")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("media_title_id", mediaTitleId)
+        .single();
+
+      if (duplicateError) {
+        throw new Error(duplicateError.message);
+      }
+
+      return duplicate;
+    }
+
     throw new Error(error.message);
   }
 
@@ -290,7 +500,7 @@ export async function addTitleToWatchlist(input: {
 export async function removeWatchlistItem(watchlistItemId: string) {
   const { supabase } = await requireSupabaseUser();
   const { error } = await supabase
-    .from("watchlist_items")
+    .from("user_watchlist_items")
     .delete()
     .eq("id", watchlistItemId);
 
@@ -306,7 +516,7 @@ export async function updateMovieTracking(input: {
 }) {
   const { supabase } = await requireSupabaseUser();
   const { error } = await supabase
-    .from("movie_trackings")
+    .from("user_movie_trackings")
     .update({
       watched: input.watched,
       user_rating: input.rating === undefined ? undefined : parseNullableRating(input.rating),
@@ -321,7 +531,7 @@ export async function updateMovieTracking(input: {
 export async function updateShowRating(libraryItemId: string, rating: unknown) {
   const { supabase } = await requireSupabaseUser();
   const { error } = await supabase
-    .from("show_trackings")
+    .from("user_show_trackings")
     .update({
       user_rating: parseNullableRating(rating),
     })
@@ -335,7 +545,7 @@ export async function updateShowRating(libraryItemId: string, rating: unknown) {
 export async function updateSeasonRating(seasonId: string, rating: unknown) {
   const { supabase } = await requireSupabaseUser();
   const { error } = await supabase
-    .from("season_trackings")
+    .from("user_season_trackings")
     .update({
       user_rating: parseNullableRating(rating),
     })
@@ -353,7 +563,7 @@ export async function updateEpisodeTracking(input: {
 }) {
   const { supabase } = await requireSupabaseUser();
   const { error } = await supabase
-    .from("episode_trackings")
+    .from("user_episode_trackings")
     .update({
       watched: input.watched,
       user_rating: input.rating === undefined ? undefined : parseNullableRating(input.rating),
@@ -368,7 +578,7 @@ export async function updateEpisodeTracking(input: {
 export async function updateSeasonWatchedState(seasonId: string, watched: boolean) {
   const { supabase } = await requireSupabaseUser();
   const { data: episodes, error: episodeError } = await supabase
-    .from("episodes")
+    .from("media_episodes")
     .select("id")
     .eq("season_id", seasonId);
 
@@ -383,7 +593,7 @@ export async function updateSeasonWatchedState(seasonId: string, watched: boolea
   }
 
   const { error } = await supabase
-    .from("episode_trackings")
+    .from("user_episode_trackings")
     .update({ watched })
     .in("episode_id", episodeIds);
 
