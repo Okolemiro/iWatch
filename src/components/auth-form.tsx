@@ -2,9 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { APP_NAME } from "@/lib/constants";
-import { publicEnv } from "@/lib/public-env";
 
 type AuthMode = "sign-in" | "sign-up";
 
@@ -28,39 +26,55 @@ export function AuthForm() {
     event.preventDefault();
 
     startTransition(async () => {
-      const supabase = createSupabaseBrowserClient();
       setMessage(null);
       setError(null);
 
       try {
         if (mode === "sign-in") {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+          const response = await fetch("/api/auth/sign-in", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email,
+              password,
+              next,
+            }),
           });
 
-          if (signInError) {
-            throw signInError;
+          const payload = (await response.json().catch(() => null)) as
+            | { error?: string; redirectTo?: string }
+            | null;
+
+          if (!response.ok) {
+            throw new Error(payload?.error || "Authentication failed.");
           }
 
-          router.push(next);
+          router.push(payload?.redirectTo || "/");
           router.refresh();
           return;
         }
 
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${publicEnv.NEXT_PUBLIC_SITE_URL}/auth/callback?next=${encodeURIComponent(next)}`,
+        const response = await fetch("/api/auth/sign-up", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            email,
+            password,
+            next,
+          }),
         });
 
-        if (signUpError) {
-          throw signUpError;
+        const payload = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
+
+        if (!response.ok) {
+          throw new Error(payload?.error || "Authentication failed.");
         }
 
-        setMessage("Account created. Check your email to confirm your address, then sign in.");
+        setMessage(payload?.message || "Account created. Check your email to confirm your address, then sign in.");
         setMode("sign-in");
       } catch (submitError) {
         setError(submitError instanceof Error ? submitError.message : "Authentication failed.");
@@ -117,13 +131,19 @@ export function AuthForm() {
           <input
             type="password"
             required
-            minLength={6}
+            minLength={10}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="At least 6 characters"
+            placeholder="At least 10 characters"
             className="focus-ring rounded-[1.25rem] border border-white/10 bg-white/6 px-4 py-3 text-white placeholder:text-white/40"
           />
         </label>
+
+        {mode === "sign-up" ? (
+          <p className="text-xs leading-5 text-white/60">
+            Use at least 10 characters with uppercase, lowercase, and a number.
+          </p>
+        ) : null}
 
         {message ? <p className="rounded-2xl bg-emerald-500/12 px-4 py-3 text-sm text-emerald-200">{message}</p> : null}
         {error ? <p className="rounded-2xl bg-rose-500/12 px-4 py-3 text-sm text-rose-200">{error}</p> : null}

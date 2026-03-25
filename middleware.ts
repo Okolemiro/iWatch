@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { sanitizeNextPath } from "@/lib/security";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const protectedPrefixes = ["/library", "/movies", "/shows", "/watchlist"];
@@ -20,7 +21,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user && requiresAuth) {
     const redirectUrl = new URL("/auth", request.url);
-    redirectUrl.searchParams.set("next", `${pathname}${search}`);
+    redirectUrl.searchParams.set("next", sanitizeNextPath(`${pathname}${search}`));
     return NextResponse.redirect(redirectUrl);
   }
 

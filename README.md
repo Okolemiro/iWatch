@@ -26,6 +26,14 @@ TMDB_API_KEY="your_tmdb_api_key_here"
 
 `TMDB_API_KEY` stays server-side. Do not expose a service-role key in the frontend.
 
+## Security defaults
+
+- Auth submissions are handled through server-side routes with safe redirect validation.
+- Passwords are handled by Supabase Auth and are not stored in app code or app tables.
+- The frontend only uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- App-level rate limiting protects sign-in and sign-up routes.
+- Additional operational hardening steps are documented in [SECURITY.md](./SECURITY.md).
+
 ## Supabase setup
 
 1. Create a new Supabase project.

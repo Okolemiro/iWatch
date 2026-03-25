@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
+import { sanitizeNextPath } from "@/lib/security";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function getSessionUser() {
@@ -16,7 +17,7 @@ export async function requireUser(nextPath = "/") {
   const user = await getSessionUser();
 
   if (!user) {
-    redirect(`/auth?next=${encodeURIComponent(nextPath)}`);
+    redirect(`/auth?next=${encodeURIComponent(sanitizeNextPath(nextPath))}`);
   }
 
   return user;
