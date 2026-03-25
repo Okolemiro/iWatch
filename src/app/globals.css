@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --color-page: #f7f7fa;
-  --color-page-end: #ececf2;
-  --color-surface: rgba(255, 255, 255, 0.92);
-  --color-surface-strong: #f0f0f5;
-  --color-text: #09090b;
-  --color-text-muted: #444452;
-  --color-border: rgba(9, 9, 11, 0.16);
-  --color-accent: #8b3dff;
-  --color-accent-strong: #6e1fff;
-  --color-accent-soft: rgba(139, 61, 255, 0.16);
-  --color-success: #7c3aed;
-  --color-warning: #a855f7;
+  --color-page: #f6f4fa;
+  --color-page-end: #ece8f6;
+  --color-surface: rgba(255, 255, 255, 0.84);
+  --color-surface-strong: #ffffff;
+  --color-text: #09090d;
+  --color-text-muted: #5c5970;
+  --color-border: rgba(26, 18, 44, 0.12);
+  --color-accent: #6d28d9;
+  --color-accent-strong: #4c1d95;
+  --color-accent-soft: rgba(109, 40, 217, 0.12);
+  --color-success: #6d28d9;
+  --color-warning: #7c3aed;
   --color-danger: #fb7185;
-  --shadow-panel: 0 18px 45px rgba(21, 21, 24, 0.08);
+  --shadow-panel: 0 24px 60px rgba(38, 26, 72, 0.08);
 }
 
 @theme inline {
@@ -25,20 +25,20 @@
 }
 
 .dark {
-  --color-page: #000000;
-  --color-page-end: #000000;
-  --color-surface: rgba(10, 10, 12, 0.95);
-  --color-surface-strong: #131316;
-  --color-text: #fafafa;
-  --color-text-muted: #a1a1aa;
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-accent: #9b5cff;
-  --color-accent-strong: #7b2cff;
-  --color-accent-soft: rgba(155, 92, 255, 0.18);
-  --color-success: #8b5cf6;
+  --color-page: #050507;
+  --color-page-end: #0f0918;
+  --color-surface: rgba(14, 14, 18, 0.82);
+  --color-surface-strong: #17131f;
+  --color-text: #faf9ff;
+  --color-text-muted: #aba5bc;
+  --color-border: rgba(255, 255, 255, 0.09);
+  --color-accent: #a855f7;
+  --color-accent-strong: #c084fc;
+  --color-accent-soft: rgba(168, 85, 247, 0.16);
+  --color-success: #a855f7;
   --color-warning: #c084fc;
   --color-danger: #fb7185;
-  --shadow-panel: 0 22px 65px rgba(0, 0, 0, 0.42);
+  --shadow-panel: 0 30px 80px rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -53,8 +53,9 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at top left, rgba(139, 61, 255, 0.11), transparent 20%),
-    radial-gradient(circle at top right, rgba(139, 61, 255, 0.08), transparent 18%),
+    radial-gradient(circle at top left, rgba(109, 40, 217, 0.12), transparent 22%),
+    radial-gradient(circle at 80% 12%, rgba(168, 85, 247, 0.1), transparent 18%),
+    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.08), transparent 22%),
     linear-gradient(180deg, var(--color-page), var(--color-page-end));
   color: var(--color-text);
   font-family: var(--font-sans);
@@ -95,25 +96,42 @@ textarea:disabled {
 }
 
 .panel {
-  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-strong) 44%, transparent), transparent 36%),
+    color-mix(in srgb, var(--color-surface) 92%, transparent);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-panel);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(20px);
 }
 
 .panel-muted {
-  background: color-mix(in srgb, var(--color-surface-strong) 88%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-strong) 30%, transparent), transparent 42%),
+    color-mix(in srgb, var(--color-surface-strong) 90%, transparent);
   border: 1px solid var(--color-border);
 }
 
 .hero-panel {
   position: relative;
-  border: 1px solid color-mix(in srgb, var(--color-border) 85%, white 15%);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-border) 84%, white 16%);
   background:
-    linear-gradient(145deg, color-mix(in srgb, var(--color-surface-strong) 90%, transparent), color-mix(in srgb, var(--color-surface) 78%, transparent)),
-    radial-gradient(circle at top right, rgba(139, 61, 255, 0.24), transparent 28%),
-    radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.08), transparent 16%);
+    linear-gradient(155deg, color-mix(in srgb, var(--color-surface-strong) 88%, transparent), color-mix(in srgb, var(--color-surface) 72%, transparent)),
+    radial-gradient(circle at top right, rgba(168, 85, 247, 0.22), transparent 30%),
+    radial-gradient(circle at 12% 24%, rgba(255, 255, 255, 0.1), transparent 18%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.02), transparent 60%);
   box-shadow: var(--shadow-panel);
+}
+
+.hero-panel::after {
+  content: "";
+  position: absolute;
+  inset: auto -8% -38% auto;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 26%, transparent), transparent 64%);
+  pointer-events: none;
 }
 
 .eyebrow {

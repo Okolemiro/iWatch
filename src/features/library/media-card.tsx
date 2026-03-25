@@ -10,7 +10,7 @@ export function MediaCard({ item }: { item: LibraryCardItem }) {
   const href = item.href || (item.mediaType === "movie" ? `/movies/${item.id}` : `/shows/${item.id}`);
 
   return (
-    <Link href={href} className="panel group overflow-hidden rounded-[2rem] transition hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(22,31,52,0.14)]">
+    <Link href={href} className="panel group overflow-hidden rounded-[2rem] transition hover:-translate-y-1 hover:shadow-[0_28px_65px_rgba(37,18,67,0.18)]">
       <div className="grid gap-5 p-5">
         <PosterTile path={item.posterPath} alt={item.title} className="aspect-[2/3] w-full" />
 
@@ -23,11 +23,11 @@ export function MediaCard({ item }: { item: LibraryCardItem }) {
                 </span>
                 {!item.metaLabel ? <StatusBadge status={item.status} /> : null}
               </div>
-              <h3 className="mt-3 text-lg font-semibold tracking-tight">{item.title}</h3>
+              <h3 className="mt-3 text-lg font-semibold tracking-[-0.03em]">{item.title}</h3>
               <p className="mt-1 text-sm text-[var(--color-text-muted)]">{formatYear(item.releaseDateOrFirstAirDate) || "TBA"}</p>
             </div>
             {item.rating ? (
-              <div className="flex items-center gap-1 rounded-full bg-[var(--color-surface-strong)] px-3 py-1 text-sm font-semibold">
+              <div className="flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface-strong)_84%,transparent)] px-3 py-1 text-sm font-semibold">
                 <Star className="size-4 fill-current text-[var(--color-accent)]" />
                 {item.rating.toFixed(1)}
               </div>

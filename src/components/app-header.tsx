@@ -9,14 +9,14 @@ export async function AppHeader() {
   const user = await getSessionUser();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-page)_82%,transparent)] backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-page)_70%,transparent)] backdrop-blur-2xl">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex size-13 items-center justify-center rounded-[1.4rem] bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] text-white shadow-[0_18px_38px_rgba(123,44,255,0.32)]">
+          <div className="flex size-13 items-center justify-center rounded-[1.4rem] border border-[color:color-mix(in_srgb,var(--color-accent)_42%,white_6%)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--color-accent)_88%,black_12%),color-mix(in_srgb,var(--color-accent-strong)_70%,black_30%))] text-white shadow-[0_18px_38px_rgba(91,33,182,0.28)]">
             <Film className="size-5" />
           </div>
           <div>
-            <Link href="/" className="text-xl font-semibold tracking-tight">
+            <Link href="/" className="text-xl font-semibold tracking-[-0.03em]">
               {APP_NAME}
             </Link>
             <p className="text-sm text-[var(--color-text-muted)]">
@@ -28,28 +28,28 @@ export async function AppHeader() {
         <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/"
-            className="focus-ring inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-[var(--color-text-muted)] transition hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-text)]"
+            className="focus-ring inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-[var(--color-text-muted)] transition hover:bg-[color:color-mix(in_srgb,var(--color-accent-soft)_90%,transparent)] hover:text-[var(--color-text)]"
           >
             <Home className="size-4" />
             Dashboard
           </Link>
           <Link
             href="/library"
-            className="focus-ring inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--color-surface-strong)]"
+            className="focus-ring inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_92%,transparent)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--color-surface-strong)]"
           >
             <LibraryBig className="size-4" />
             Library
           </Link>
           <Link
             href="/watchlist"
-            className="focus-ring inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--color-surface-strong)]"
+            className="focus-ring inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_92%,transparent)] px-4 py-2 text-sm font-medium transition hover:bg-[var(--color-surface-strong)]"
           >
             <Bookmark className="size-4" />
             Watchlist
           </Link>
 
           {user ? (
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_92%,transparent)] px-4 py-2 text-sm">
               <ShieldCheck className="size-4 text-[var(--color-accent)]" />
               <span className="font-medium">{getUserDisplayName(user)}</span>
             </div>

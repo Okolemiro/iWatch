@@ -17,16 +17,16 @@ export default async function HomePage() {
     <div className="app-shell">
       <AppHeader />
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 pb-16 pt-8">
-        <section className="hero-panel overflow-hidden rounded-[2.25rem] px-6 py-7 lg:px-8 lg:py-8">
+        <section className="hero-panel rounded-[2.5rem] px-6 py-8 lg:px-9 lg:py-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <p className="eyebrow">
                 iWatched dashboard
               </p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight lg:text-5xl">
+              <h1 className="mt-4 max-w-3xl text-3xl font-semibold tracking-[-0.04em] lg:text-5xl">
                 Your private watchlist, ratings, and episode progress in one secure place.
               </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-[var(--color-text-muted)] lg:text-base lg:leading-7">
+              <p className="mt-5 max-w-2xl text-sm leading-6 text-[var(--color-text-muted)] lg:text-base lg:leading-7">
                 Search TMDb, add titles in seconds, and keep every movie and show tied to your own account with
                 Supabase-backed access control.
               </p>
@@ -34,13 +34,13 @@ export default async function HomePage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <Link
                 href="/library"
-                className="focus-ring inline-flex items-center justify-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)]"
+                className="focus-ring inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-5 py-3.5 text-center text-sm font-semibold text-white transition hover:brightness-105"
               >
                 Open library
               </Link>
               <Link
                 href="/watchlist"
-                className="focus-ring inline-flex items-center justify-center rounded-[1.5rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4 text-center text-sm font-medium text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-strong)]"
+                className="focus-ring inline-flex items-center justify-center rounded-full border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_92%,transparent)] px-5 py-3.5 text-center text-sm font-medium text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-strong)]"
               >
                 Open watchlist
               </Link>

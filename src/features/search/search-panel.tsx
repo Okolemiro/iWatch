@@ -156,7 +156,7 @@ export function SearchPanel() {
         </div>
       </div>
 
-      <label className="mt-6 flex items-center gap-3 rounded-[1.6rem] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4">
+      <label className="mt-6 flex items-center gap-3 rounded-[1.6rem] border border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_94%,transparent)] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
         <Search className="size-5 text-[var(--color-text-muted)]" />
         <input
           value={query}
@@ -170,7 +170,7 @@ export function SearchPanel() {
       {error ? <div className="mt-5"><ErrorState title="Search unavailable" description={error} /></div> : null}
 
       {!hasQuery ? (
-        <div className="mt-6 rounded-[1.6rem] border border-dashed border-[var(--color-border)] p-8 text-sm text-[var(--color-text-muted)]">
+        <div className="mt-6 rounded-[1.6rem] border border-dashed border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_36%,transparent)] p-8 text-sm text-[var(--color-text-muted)]">
           Start typing to search TMDb. Results include both movies and TV shows.
         </div>
       ) : null}
@@ -178,7 +178,7 @@ export function SearchPanel() {
       {isPending && hasQuery ? <p className="mt-6 text-sm text-[var(--color-text-muted)]">Searching...</p> : null}
 
       {hasQuery && !isPending && !results.length && !error ? (
-        <div className="mt-6 rounded-[1.6rem] border border-dashed border-[var(--color-border)] p-8 text-sm text-[var(--color-text-muted)]">
+        <div className="mt-6 rounded-[1.6rem] border border-dashed border-[var(--color-border)] bg-[color:color-mix(in_srgb,var(--color-surface)_36%,transparent)] p-8 text-sm text-[var(--color-text-muted)]">
           No titles found for this search. Try a broader title or a different year.
         </div>
       ) : null}
@@ -189,7 +189,7 @@ export function SearchPanel() {
             const addId = `${result.mediaType}-${result.tmdbId}`;
 
             return (
-              <article key={addId} className="panel-muted grid grid-cols-[92px_1fr] gap-4 rounded-[1.6rem] p-4">
+              <article key={addId} className="panel-muted grid grid-cols-[92px_1fr] gap-4 rounded-[1.7rem] p-4">
                 <PosterTile path={result.posterPath} alt={result.title} className="aspect-[2/3] w-full" size="small" />
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -221,7 +221,7 @@ export function SearchPanel() {
                       type="button"
                       onClick={() => handleAdd(result)}
                       disabled={result.inLibrary || activeAddId === addId}
-                      className="focus-ring inline-flex items-center justify-center rounded-full bg-[var(--color-accent)] px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-[var(--color-accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="focus-ring inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--color-accent),var(--color-accent-strong))] px-4 py-2 text-center text-sm font-semibold text-white transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {result.inLibrary ? "Already added" : activeAddId === addId ? "Adding..." : "Add to library"}
                     </button>
